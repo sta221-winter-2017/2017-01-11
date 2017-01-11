@@ -1,0 +1,143 @@
+---
+title: "STA221"
+author: "Neil Montgomery"
+date: "Last edited: `r format(Sys.time(), '%Y-%m-%d %H:%M')`"
+output: 
+  beamer_presentation:
+    incremental: TRUE
+    df_print: tibble
+    fig_caption: FALSE
+classoption: aspectratio=169
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE,
+                      dev='pdf', fig.width=4, fig.asp=0.618)
+options(tibble.width=70)
+```
+
+## $t$ distributions
+
+If a population is being modeled with a $N(\mu,\sigma)$ probability model and you are going to gather a sample $X_1,X_2,\ldots,X_n$, then the following are true:
+
+\begin{align*}
+\onslide<1->{\overline{X} &\sim N(\mu, \sigma/\sqrt{n})\\}
+\onslide<2->{\frac{\overline{X} - \mu}{\sigma/\sqrt{n}} &\sim N(0,1) }
+\end{align*}
+
+\pause 
+
+\pause We usually don't know $\sigma$, but we can estimate it from the data using $s$, but then:
+$$\frac{\overline{X} - \mu}{s/\sqrt{n}} \sim t_{n-1}$$
+
+$n-1$ is called "degrees of freedom".
+
+## degress of freedom
+
+"Degrees of freedom" comes from the denominator $s/\sqrt{n}$. Let's look at (the square of) s:
+
+\pause $$s^2 = \frac{\sum\limits_{i=1}^n \left(x_i - \overline{x}_i\right)^2}{n-1}$$
+There's $n-1$ again! 
+
+\pause The phrase "degrees of freedom" comes from the realization that *given the value of $\overline{x}$* the following list of number is redundant:
+$$\{x_1,x_2,x_3,\ldots,x_n\}$$
+From *any* $n-1$ of them, along with $\overline{x}$, you could calculate the missing value. 
+
+## $t$ distributions - II
+
+The $t$ distributions are (another) family of symmetric and bell-shaped distributions that look very much like $N(0,1)$ distributions.
+
+```{r, message=FALSE}
+library(tidyverse)
+x <- -35:35/10
+t_dists <- bind_rows(
+  data_frame(Distribution="t_3", x=x, density=dt(x, 3)),
+  data_frame(Distribution="t_10", x=x, density=dt(x, 10)),
+  data_frame(Distribution="t_50", x=x, density=dt(x, 50)),
+  data_frame(Distribution="N(0,1)", x=x, density=dnorm(x)))
+
+t_dists %>% 
+  ggplot(aes(x=x, y=density, color=Distribution)) + geom_line()
+```
+
+
+## estimation - confidence intervals
+
+From the following:
+
+$$\frac{\overline{X} - \mu}{\sigma/\sqrt{n}} \sim N(0,1) \qquad \text{and} \qquad
+\frac{\overline{X} - \mu}{s/\sqrt{n}} \sim t_{n-1}$$
+
+*which are approximately true for "large enough" $n$* we get the usual 95\% confidence intervals:
+
+$$\overline{X} \pm 1.96\frac{\sigma}{\sqrt{n}} \qquad \text{and} \qquad
+\overline{X} \pm \text{``2''}\frac{s}{\sqrt{n}}$$
+
+I put "2" because the value (for a 95\% interval) is always close to 2.
+
+## hypothesis testing - some very opinionated hints
+
+Sometimes particular values of a population parameters have an obvious meaning along the lines of "no difference", "no relationship", or something similar.
+
+\pause This obvious parameter value can be given the grand title "null hypothesis", such as in:
+$$H_0: \mu_1 = \mu_2$$
+
+\pause The "alternative" is the negation of the null. (No selecting alternatives based on hopes and dreams!), such as in:
+$$H_a: \mu_1\ne\mu_2$$
+
+\pause Modern inference is done using "p-values", which are defined as *the probability of observing a summary of the data that is more extreme than what was observed.*
+
+## p-values
+
+More extreme than what?
+
+\pause \textit{More extreme than where the null hypothesis "lives"}
+
+\pause Hypothesis testing and p-values are controversial, due to misuse, misunderstanding, and lots of other issues.
+
+\pause Required reading: the ASA Statement on Statistical Significance and P-Values (pdf with lecture materials.)
+
+## example ("eye drops")
+
+Which eye drop (A or B) for pupil dilation wears off faster?
+
+40 people are each given both eye drops on different days. The wear-out times are recorded for each person.
+
+```{r, message=FALSE}
+library(tidyverse)
+mu <- 120
+s <- 20
+difference <- 15
+s_d <- 40
+n <- 40
+set.seed(1)
+
+eyedrops <- data_frame(A = rnorm(n, mu, s)) %>% 
+  mutate(B = A + rnorm(n, difference, s_d), Difference=A-B)
+options(tibble.print_min=5)
+eyedrops
+```
+
+
+## example "eye drops"
+
+Mean and standard deviation of `Difference` are:
+
+
+```{r}
+library(knitr)
+summ <- eyedrops %>% 
+  summarize("x-bar"=mean(Difference), "sd"=sd(Difference))
+kable(summ, digits=2)
+```
+
+\pause The "standard error" of $\overline{x}$ is $s/\sqrt{n} = `r summ$sd / sqrt(n)`$
+
+## the $t$ test in R
+
+```{r}
+t.test(eyedrops$Difference)
+```
+
+
+
